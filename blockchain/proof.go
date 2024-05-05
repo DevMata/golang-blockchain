@@ -10,6 +10,7 @@ import (
 	"math/big"
 )
 
+// Difficulty note: change this to demostrate computing work
 const Difficulty = 16
 
 type ProofOfWork struct {
@@ -40,7 +41,6 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 		data := pow.InitData(nonce)
 		hash = sha256.Sum256(data)
 
-		fmt.Printf("\r%x", hash)
 		intHash.SetBytes(hash[:])
 
 		if intHash.Cmp(pow.Target) == -1 {
