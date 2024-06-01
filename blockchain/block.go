@@ -33,8 +33,8 @@ func (b *Block) Serialize() []byte {
 	return res.Bytes()
 }
 
-// HashTransactions nos permite obtener los Bytes de un arreglo
-// de transacciones para un bloque
+// HashTransactions nos permite obtener el hash en bytes
+// de las transacciones para un bloque
 func (b *Block) HashTransactions() []byte {
 	var txHashes [][]byte
 	var txHash [32]byte

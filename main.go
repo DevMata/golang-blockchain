@@ -20,8 +20,8 @@ type CommandLine struct {
 func (cli *CommandLine) printUsage() {
 	fmt.Println("Uso: ")
 	fmt.Println(" getbalance -address ADDRESS - obtiene el balance para dirección address")
-	fmt.Println(" createblockchain -address ADDRESS crea la cadena y envía el reward para el bloque génesis")
-	fmt.Println(" printchain - Imprime los bloques en la cadena")
+	fmt.Println(" createblockchain -address ADDRESS - crea la cadena y envía el reward para el bloque génesis")
+	fmt.Println(" printchain - imprime los bloques en la cadena")
 	fmt.Println(" send -from FROM -to TO -amount AMOUNT - envía una cantidad de divisas")
 }
 
@@ -33,7 +33,7 @@ func (cli *CommandLine) validateArgs() {
 }
 
 func (cli *CommandLine) printChain() {
-	chain := blockchain.ContinueBlockChain("")
+	chain := blockchain.ContinueBlockChain()
 	defer blockchain.HandleDBClose(chain.Database)
 
 	iterator := chain.Iterator()
@@ -59,7 +59,7 @@ func (cli *CommandLine) createBlockChain(address string) {
 }
 
 func (cli *CommandLine) getBalance(address string) {
-	chain := blockchain.ContinueBlockChain(address)
+	chain := blockchain.ContinueBlockChain()
 	defer blockchain.HandleDBClose(chain.Database)
 
 	balance := 0
@@ -73,12 +73,12 @@ func (cli *CommandLine) getBalance(address string) {
 }
 
 func (cli *CommandLine) send(from, to string, amount int) {
-	chain := blockchain.ContinueBlockChain(from)
+	chain := blockchain.ContinueBlockChain()
 	defer blockchain.HandleDBClose(chain.Database)
 
 	tx := blockchain.NewTransaction(from, to, amount, chain)
 	chain.AddBlock([]*blockchain.Transaction{tx})
-	fmt.Println("¡Éxito!")
+	fmt.Println("Éxito")
 }
 
 // run contiene la lógica para usar la CLI
@@ -91,10 +91,10 @@ func (cli *CommandLine) run() {
 	sendCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 
-	getBalanceAddress := getBalanceCmd.String("address", "", "La dirección para ver su balance")
-	createBlockchainAddress := createBlockchainCmd.String("address", "", "La dirección para enviar el reward del bloque Génesis")
-	sendFrom := sendCmd.String("from", "", "La wallet origen")
-	sendTo := sendCmd.String("to", "", "La wallet destino")
+	getBalanceAddress := getBalanceCmd.String("address", "", "La dirección(usuario) para ver su balance")
+	createBlockchainAddress := createBlockchainCmd.String("address", "", "La dirección(usuario) para enviar el reward del bloque Génesis")
+	sendFrom := sendCmd.String("from", "", "La wallet(usuario) origen")
+	sendTo := sendCmd.String("to", "", "La wallet(usuario) destino")
 	sendAmount := sendCmd.Int("amount", 0, "Monto a enviar")
 
 	switch os.Args[1] {

@@ -24,14 +24,10 @@ type BlockChain struct {
 	Database *badger.DB
 }
 
-func doesDBExist() bool {
-	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
+// InitBlockChain nos permite instaciar una nueva cadena
+// address es la dirección del usuario, en nuestro caso pasaremos un nombre
 func InitBlockChain(address string) *BlockChain {
+	// validamos si la cadena ya existe
 	if doesDBExist() {
 		fmt.Println("La cadena ya existe")
 		runtime.Goexit()
@@ -39,10 +35,11 @@ func InitBlockChain(address string) *BlockChain {
 
 	var lastHash []byte
 
+	// conectamos la BDD
 	opts := badger.DefaultOptions(dbPath)
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath
-	//	TODO: add settings for the db logger
+	opts.Logger = nil
 
 	db, err := badger.Open(opts)
 	Handle(err)
@@ -50,7 +47,7 @@ func InitBlockChain(address string) *BlockChain {
 	err = db.Update(func(txn *badger.Txn) error {
 		cbTx := CoinbaseTx(address, genesisData)
 		genesis := Genesis(cbTx)
-		fmt.Println("Genesis creada")
+		fmt.Println("Bloque Génesis creado")
 		err = txn.Set(genesis.Hash, genesis.Serialize())
 		Handle(err)
 		err = txn.Set([]byte("lh"), genesis.Hash)
@@ -67,18 +64,21 @@ func InitBlockChain(address string) *BlockChain {
 	return &blockchain
 }
 
-func ContinueBlockChain(address string) *BlockChain {
+// ContinueBlockChain nos permite cargar la cadena ya existente
+func ContinueBlockChain() *BlockChain {
+	// validamos si la cadena no existe
 	if doesDBExist() == false {
-		fmt.Println("¡La cadena no existe, crea una!")
+		fmt.Println("Error: La cadena no existe, creála.")
 		runtime.Goexit()
 	}
 
 	var lastHash []byte
 
+	// conectamos la BDD
 	opts := badger.DefaultOptions(dbPath)
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath
-	//	TODO: add settings for the db logger
+	opts.Logger = nil
 
 	db, err := badger.Open(opts)
 	Handle(err)
@@ -101,9 +101,8 @@ func ContinueBlockChain(address string) *BlockChain {
 	return &blockchain
 }
 
-
 // AddBlock nos permite insertar un bloque nuevo a la cadena
-// espera data - que puede ser cualquier cosa que queramos insertar
+// espera un arreglo de transacciones
 func (blockchain *BlockChain) AddBlock(transactions []*Transaction) {
 	var lastHash []byte
 
@@ -178,6 +177,8 @@ func (iterator *Iterator) Next() *Block {
 	return block
 }
 
+// FindUnspentTransactions nos permite encontrar aquellas transacciones cuyos fondos no se han gastado
+// las filtraremos por address - es decir el nombre de un usuario
 func (blockchain *BlockChain) FindUnspentTransactions(address string) []Transaction {
 	var unspentTxs []Transaction
 
@@ -185,13 +186,15 @@ func (blockchain *BlockChain) FindUnspentTransactions(address string) []Transact
 
 	iter := blockchain.Iterator()
 
+	// iteramos los bloques en la cadena
 	for {
 		block := iter.Next()
 
+		// iteramos las transacciones en el bloque
 		for _, tx := range block.Transactions {
 			txId := hex.EncodeToString(tx.ID)
 
-		Outputs:
+		Outputs: // iteramos las salidas en la transacción
 			for outIdx, out := range tx.Outputs {
 				if spentTXOs[txId] != nil {
 					for _, spentOut := range spentTXOs[txId] {
@@ -200,13 +203,18 @@ func (blockchain *BlockChain) FindUnspentTransactions(address string) []Transact
 						}
 					}
 				}
+
+				// el usuario puede ver la transacción porque fue el emisor
 				if out.CanBeUnlocked(address) {
 					unspentTxs = append(unspentTxs, *tx)
 				}
 			}
 
+			// validamos si es una transacción monetaria
 			if !tx.IsCoinBase() {
+				// iteramos las entradas en la transacción
 				for _, in := range tx.Inputs {
+					// el usuario puede ver la transacción porque fue el destinatario
 					if in.CanUnlock(address) {
 						inTxID := hex.EncodeToString(in.ID)
 						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
@@ -215,6 +223,7 @@ func (blockchain *BlockChain) FindUnspentTransactions(address string) []Transact
 			}
 		}
 
+		// si es el bloque Génesis
 		if len(block.PrevHash) == 0 {
 			break
 		}
@@ -223,6 +232,7 @@ func (blockchain *BlockChain) FindUnspentTransactions(address string) []Transact
 	return unspentTxs
 }
 
+// FindUTXO nos devuelve un arreglo con transacciones de salida para un usuario
 func (blockchain *BlockChain) FindUTXO(address string) []TxOutput {
 	var UTXOs []TxOutput
 	unspentTransactions := blockchain.FindUnspentTransactions(address)
@@ -238,16 +248,21 @@ func (blockchain *BlockChain) FindUTXO(address string) []TxOutput {
 	return UTXOs
 }
 
+// FindSpendableOutputs nos devuelve el monto total de los recursos disponibles para el usuario
+// también un diccionario de transacciones y sus respectivos montos
 func (blockchain *BlockChain) FindSpendableOutputs(address string, amount int) (int, map[string][]int) {
 	unspentOuts := make(map[string][]int)
 	unspentTxs := blockchain.FindUnspentTransactions(address)
 	accumulated := 0
 
+	// iteramos las transacciones con fondos no gastados
 Work:
 	for _, tx := range unspentTxs {
 		txID := hex.EncodeToString(tx.ID)
 
+		// iteramos las salidas en la transacción
 		for outIdx, out := range tx.Outputs {
+			// validamos que el monto acumulado aún no nos permite gastar lo deseado
 			if out.CanBeUnlocked(address) && accumulated < amount {
 				accumulated += out.Value
 				unspentOuts[txID] = append(unspentOuts[txID], outIdx)
@@ -262,7 +277,13 @@ Work:
 	return accumulated, unspentOuts
 }
 
-// métodos
+// doesDBExist nos deja saber si la BDD ya existe
+func doesDBExist() bool {
+	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
 
 // HandleDBClose permite cerrar la BDD de manera controlada
 func HandleDBClose(Database *badger.DB) {

@@ -9,37 +9,48 @@ import (
 	"log"
 )
 
-// Input
-
+// TxInput es una entrada en una transacción
+// tiene ID como identificación
+// Out es el monto
+// Sig es el destinatario
 type TxInput struct {
 	ID  []byte
 	Out int
 	Sig string
 }
 
+// CanUnlock nos permite saber si el usuario puede ver la transacción
+// porque fue el destinatario de esta
 func (in *TxInput) CanUnlock(data string) bool {
 	return in.Sig == data
 }
 
-// Output
-
+// TxOutput es una salida en una transacción
+// tiene Value como el monto
+// PubKey es el usuario que está enviando la transacción
 type TxOutput struct {
 	Value  int
 	PubKey string
 }
 
+// CanBeUnlocked nos permite saber si el usuario puede ver la transacción
+// porque fue el emisor de esta
 func (out *TxOutput) CanBeUnlocked(data string) bool {
 	return out.PubKey == data
 }
 
-// Transaction
+// Transaction y sus métodos
 
+// Transaction representa la estructura de una transacción
+// tiene un ID, y arreglos para sus entradas y salidas
 type Transaction struct {
 	ID      []byte
 	Inputs  []TxInput
 	Outputs []TxOutput
 }
 
+// SetID define el id para la transacción
+// qué básicamente es el hash de su información
 func (tx *Transaction) SetID() {
 	var encoded bytes.Buffer
 	var hash [32]byte
