@@ -3,17 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/devmata/golang-blockchain/blockchain"
 	"log"
 	"os"
 	"runtime"
 	"strconv"
-
-	"github.com/devmata/golang-blockchain/blockchain"
 )
 
+// CommandLine y sus métodos
+
+// CommandLine es una estructura muy básica para tener un CLI
 type CommandLine struct {
 }
 
+// printUsage muestra en pantalla el manual para uso
 func (cli *CommandLine) printUsage() {
 	fmt.Println("Uso: ")
 	fmt.Println(" getbalance -address ADDRESS - obtiene el balance para dirección address")
@@ -38,7 +41,7 @@ func (cli *CommandLine) printChain() {
 	for {
 		block := iterator.Next()
 
-		fmt.Printf("\nPrevious hash: %x\n", block.PrevHash)
+		fmt.Printf("\nHash de bloque anterior: %x\n", block.PrevHash)
 		fmt.Printf("Hash: %x\n", block.Hash)
 		pow := blockchain.NewProof(block)
 		fmt.Printf("PoW: %s\n\n", strconv.FormatBool(pow.Validate()))
@@ -78,6 +81,8 @@ func (cli *CommandLine) send(from, to string, amount int) {
 	fmt.Println("¡Éxito!")
 }
 
+// run contiene la lógica para usar la CLI
+// valida que sus diferentes funciones hayan sido llamadas correctamente
 func (cli *CommandLine) run() {
 	cli.validateArgs()
 

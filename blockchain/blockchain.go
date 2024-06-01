@@ -14,14 +14,14 @@ const (
 	genesisData = "Primera Transacción - Génesis"
 )
 
+// Blockchain y sus métodos
+
+// BlockChain es la estructura para la cadena
+// contiene el hash del último bloque insertado
+// y una referencia a la BDD
 type BlockChain struct {
 	LastHash []byte
 	Database *badger.DB
-}
-
-type Iterator struct {
-	CurrentHash []byte
-	Database    *badger.DB
 }
 
 func doesDBExist() bool {
@@ -101,9 +101,13 @@ func ContinueBlockChain(address string) *BlockChain {
 	return &blockchain
 }
 
+
+// AddBlock nos permite insertar un bloque nuevo a la cadena
+// espera data - que puede ser cualquier cosa que queramos insertar
 func (blockchain *BlockChain) AddBlock(transactions []*Transaction) {
 	var lastHash []byte
 
+	// buscamos el hash del último bloque - lastHash
 	err := blockchain.Database.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("lh"))
 		Handle(err)
@@ -116,8 +120,10 @@ func (blockchain *BlockChain) AddBlock(transactions []*Transaction) {
 
 	Handle(err)
 
+	// instanciamos el nuevo bloque
 	newBlock := CreateBlock(transactions, lastHash)
 
+	// actualizamos la info en la BDD, y el valor del último hash en la cadena
 	err = blockchain.Database.Update(func(txn *badger.Txn) error {
 		err := txn.Set(newBlock.Hash, newBlock.Serialize())
 		Handle(err)
@@ -130,6 +136,8 @@ func (blockchain *BlockChain) AddBlock(transactions []*Transaction) {
 	Handle(err)
 }
 
+// Iterator nos permite obtener el iterador para la cadena
+// con este podremos recorrer a lo largo de la cadena
 func (blockchain *BlockChain) Iterator() *Iterator {
 	iter := &Iterator{
 		CurrentHash: blockchain.LastHash,
@@ -138,9 +146,21 @@ func (blockchain *BlockChain) Iterator() *Iterator {
 	return iter
 }
 
+// Iterator y sus métodos
+
+// Iterator es una estructura que nos ayudará a iterar(recorrer) a lo largo de la cadena
+// contiene una referencia a la BDD
+type Iterator struct {
+	CurrentHash []byte
+	Database    *badger.DB
+}
+
+// Next función que permite llamar al siguiente bloque en la cadena
+// mientras la estamos recorriendo
 func (iterator *Iterator) Next() *Block {
 	var block *Block
 
+	// buscamos el bloque cuyo hash tenemos como referencia
 	err := iterator.Database.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(iterator.CurrentHash)
 		Handle(err)
@@ -152,6 +172,7 @@ func (iterator *Iterator) Next() *Block {
 	})
 	Handle(err)
 
+	// guardamos la referencia al siguiente bloque(bloque anterior según BlockChain)
 	iterator.CurrentHash = block.PrevHash
 
 	return block

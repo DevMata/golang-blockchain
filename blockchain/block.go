@@ -7,6 +7,13 @@ import (
 	"log"
 )
 
+// Block - y métodos
+
+// Block Es la estructura base de la cadena
+// Hash del bloque
+// Transactions contiene la info de las transacciones
+// PrevHash hash al bloque anterior
+// Nonce
 type Block struct {
 	Hash         []byte
 	Transactions []*Transaction
@@ -14,6 +21,8 @@ type Block struct {
 	Nonce        int
 }
 
+// Serialize Permite convertir una instancia de Block en Byte
+// para almacenarlo en la BDD
 func (b *Block) Serialize() []byte {
 	var res bytes.Buffer
 	encoder := gob.NewEncoder(&res)
@@ -24,6 +33,8 @@ func (b *Block) Serialize() []byte {
 	return res.Bytes()
 }
 
+// HashTransactions nos permite obtener los Bytes de un arreglo
+// de transacciones para un bloque
 func (b *Block) HashTransactions() []byte {
 	var txHashes [][]byte
 	var txHash [32]byte
@@ -35,6 +46,11 @@ func (b *Block) HashTransactions() []byte {
 	return txHash[:]
 }
 
+// Métodos para la lógica de Block
+
+// CreateBlock permite instaciar un bloque Block
+// pasamos las transacciones contenidas en el bloque
+// espera también el hash del bloque previo
 func CreateBlock(txs []*Transaction, prevHash []byte) *Block {
 	block := &Block{[]byte{}, txs, prevHash, 0}
 	pow := NewProof(block)
@@ -46,10 +62,13 @@ func CreateBlock(txs []*Transaction, prevHash []byte) *Block {
 	return block
 }
 
+// Genesis es una llamada específica para CreateBlock
+// que nos permite crear el bloque génesis
 func Genesis(coinbase *Transaction) *Block {
 	return CreateBlock([]*Transaction{coinbase}, []byte{})
 }
 
+// Deserialize nos permite pasar de Byte a una instancia de bloque
 func Deserialize(data []byte) *Block {
 	var block Block
 
