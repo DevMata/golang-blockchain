@@ -107,7 +107,7 @@ func InitBlockChain() *BlockChain {
 	opts := badger.DefaultOptions(dbPath)
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath
-	//	TODO: add settings for the db logger
+	opts.Logger = nil
 
 	db, err := badger.Open(opts)
 	Handle(err)
