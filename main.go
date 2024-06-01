@@ -11,14 +11,19 @@ import (
 	"github.com/devmata/golang-blockchain/blockchain"
 )
 
+// CommandLine y sus métodos
+
+// CommandLine es una estructura muy básica para tener un CLI
+// contiene una referencia a la cadena
 type CommandLine struct {
 	blockchain *blockchain.BlockChain
 }
 
+// printUsage muestra en pantalla el manual para uso
 func (cli *CommandLine) printUsage() {
-	fmt.Println("Usage: ")
-	fmt.Println(" add -block BLOCK_DATA - add a block to the chain ")
-	fmt.Println(" print - Prints the blocks in the chain")
+	fmt.Println("Uso: ")
+	fmt.Println(" add -block BLOCK_DATA - agrega un bloque a la cadena")
+	fmt.Println(" print - muestra en pantalla el contenido de la cadena")
 }
 
 func (cli *CommandLine) validateArgs() {
@@ -30,17 +35,19 @@ func (cli *CommandLine) validateArgs() {
 
 func (cli *CommandLine) addBlock(data string) {
 	cli.blockchain.AddBlock(data)
-	fmt.Println("Added block!")
+	fmt.Println("Bloque agregado")
 }
 
+// printChain recorre la cadena e imprime en pantalla
+// su contenido
 func (cli *CommandLine) printChain() {
 	iterator := cli.blockchain.Iterator()
 
 	for {
 		block := iterator.Next()
 
-		fmt.Printf("\nPrevious hash: %x\n", block.PrevHash)
-		fmt.Printf("Data in block: %s\n", block.Data)
+		fmt.Printf("\nHash de bloque anterior: %x\n", block.PrevHash)
+		fmt.Printf("Info en el bloque: %s\n", block.Data)
 		fmt.Printf("Hash: %x\n", block.Hash)
 		fmt.Printf("Nonce: %d\n", block.Nonce)
 
@@ -54,6 +61,8 @@ func (cli *CommandLine) printChain() {
 	}
 }
 
+// run contiene la lógica para usar la CLI
+// valida que sus diferentes funciones hayan sido llamadas correctamente
 func (cli *CommandLine) run() {
 	cli.validateArgs()
 
