@@ -13,8 +13,7 @@ import (
 // CommandLine y sus métodos
 
 // CommandLine es una estructura muy básica para tener un CLI
-type CommandLine struct {
-}
+type CommandLine struct{}
 
 // printUsage muestra en pantalla el manual para uso
 func (cli *CommandLine) printUsage() {
